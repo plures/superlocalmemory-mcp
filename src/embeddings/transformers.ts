@@ -1,7 +1,10 @@
 import { pipeline, env } from "@huggingface/transformers";
+import os from "node:os";
+import path from "node:path";
 
-// Disable remote model downloading when running in restricted environments
-// Models will be cached locally after first download
+// Configure cache directory
+const cacheDir = path.join(os.homedir(), ".cache", "superlocalmemory", "transformers");
+env.cacheDir = cacheDir;
 env.allowLocalModels = true;
 env.allowRemoteModels = true;
 
@@ -12,7 +15,7 @@ export interface EmbeddingProvider {
 
 /**
  * Transformers.js embedding provider using bge-small-en-v1.5 (384 dimensions).
- * This runs entirely in-process with no external API calls.
+ * This runs entirely in-process with no external API calls (after initial model download).
  */
 export class TransformersEmbeddings implements EmbeddingProvider {
   public readonly dimension = 384;
@@ -28,10 +31,22 @@ export class TransformersEmbeddings implements EmbeddingProvider {
     if (!this.pipeline) {
       if (this.debug) {
         console.error(`[TransformersEmbeddings] Loading model ${this.model}...`);
+        console.error(`[TransformersEmbeddings] Cache directory: ${cacheDir}`);
+        console.error(`[TransformersEmbeddings] Note: First run will download the model (~100MB), subsequent runs use cache`);
       }
-      this.pipeline = await pipeline("feature-extraction", this.model);
-      if (this.debug) {
-        console.error(`[TransformersEmbeddings] Model loaded successfully`);
+      
+      try {
+        this.pipeline = await pipeline("feature-extraction", this.model);
+        if (this.debug) {
+          console.error(`[TransformersEmbeddings] Model loaded successfully`);
+        }
+      } catch (err) {
+        const error = err as Error;
+        throw new Error(
+          `Failed to load embedding model: ${error.message}. ` +
+          `This may be due to network restrictions or missing model files. ` +
+          `Try running with network access first to download the model, or set OPENAI_API_KEY as fallback.`
+        );
       }
     }
     return this.pipeline;
