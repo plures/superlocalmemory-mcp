@@ -49,6 +49,19 @@ If you prefer OpenAI embeddings over local Transformers.js:
 2. The server will automatically use OpenAI with 1536-dim embeddings
 3. Falls back to Transformers.js if OpenAI fails
 
+## Migration / Breaking Changes
+
+> **Important:** Embedding dimensions are **not** interchangeable. Transformers.js uses **384‑dim** embeddings, while OpenAI uses **1536‑dim** embeddings by default.
+
+If you already have an existing database:
+
+- **Databases created with OpenAI embeddings must continue using `OPENAI_API_KEY`.**
+  - Do **not** switch that database to Transformers.js; the stored vectors will be incompatible.
+- There is **no automatic migration** between 384‑dim and 1536‑dim embeddings.
+- To change providers (OpenAI ⇄ Transformers.js), you must either:
+  - Point `SUPERLOCALMEMORY_DB_PATH` to a **new database**, or
+  - Delete/recreate the existing DB and **re-index all memories**.
+- Automatic fallback from OpenAI → Transformers.js is safe for **newly created** databases, but may produce poor or invalid retrieval results if used on a database originally indexed with OpenAI embeddings.
 ## Editor setup
 
 ### Zero-Config Examples
