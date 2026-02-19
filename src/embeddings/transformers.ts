@@ -13,13 +13,20 @@ export interface EmbeddingProvider {
   dimension: number;
 }
 
+// Narrow type for the feature-extraction pipeline used in this class.
+// This reflects only the contract we rely on (call signature and `data` shape).
+type EmbeddingPipeline = (
+  text: string,
+  options: { pooling: "mean" | "max"; normalize: boolean }
+) => Promise<{ data: ArrayLike<number> }>;
+
 /**
  * Transformers.js embedding provider using bge-small-en-v1.5 (384 dimensions).
  * This runs entirely in-process with no external API calls (after initial model download).
  */
 export class TransformersEmbeddings implements EmbeddingProvider {
   public readonly dimension = 384;
-  private pipeline: any = null;
+  private pipeline: EmbeddingPipeline | null = null;
   private readonly model = "Xenova/bge-small-en-v1.5";
   private debug: boolean;
 
