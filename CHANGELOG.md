@@ -16,7 +16,7 @@
 
 - Existing databases with 1536-dim OpenAI embeddings: Set `OPENAI_API_KEY` to continue using OpenAI
 - New installations: Work out of the box with no configuration
-- Database dimension is auto-detected based on embedding provider
+- Database dimension is determined by the configured embedding provider at startup; existing databases must use a provider with matching dimensions (no auto-detection of existing data)
 
 ## 0.1.0
 
