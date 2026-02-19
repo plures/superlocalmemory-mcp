@@ -211,7 +211,16 @@ export class MemoryDB {
     const results: SearchResult[] = [];
 
     for (const row of rows) {
-      const embedding = JSON.parse(row.embedding) as number[];
+      let embedding: number[];
+      try {
+        embedding = JSON.parse(row.embedding) as number[];
+      } catch (err) {
+        console.warn(
+          `Skipping memory entry with invalid embedding JSON (id=${row.id}):`,
+          err
+        );
+        continue;
+      }
       const score = this.cosineSimilarity(queryEmbedding, embedding);
 
       if (score >= minScore) {
