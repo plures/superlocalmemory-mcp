@@ -3,36 +3,58 @@ import type { EmbeddingProvider } from "./transformers.js";
 /**
  * OpenAI embedding provider (optional, requires openai package and API key).
  * Uses text-embedding-3-small with 1536 dimensions.
+ * Uses dynamic ES module import for better compatibility with ES module projects.
  */
 export class OpenAIEmbeddings implements EmbeddingProvider {
   public readonly dimension = 1536;
-  private client: any;
+  private apiKey: string;
   private model: string;
   private debug: boolean;
+  private clientPromise: Promise<any> | null = null;
 
   constructor(apiKey: string, model = "text-embedding-3-small", debug = false) {
+    this.apiKey = apiKey;
     this.model = model;
     this.debug = debug;
 
-    try {
-      // Dynamic import to make openai optional
-      const openaiModule = require("openai");
-      const OpenAI = openaiModule.default || openaiModule;
-      this.client = new OpenAI({ apiKey });
-
-      if (this.debug) {
-        console.error(`[OpenAIEmbeddings] Initialized with model ${this.model}`);
-      }
-    } catch (err) {
-      throw new Error(
-        "OpenAI package not available. Install with: npm install openai"
+    if (this.debug) {
+      console.error(
+        `[OpenAIEmbeddings] Configured for lazy initialization with model ${this.model}`
       );
     }
   }
 
+  private async getClient(): Promise<any> {
+    if (!this.clientPromise) {
+      this.clientPromise = (async () => {
+        try {
+          // Dynamic import to make openai optional in an ES module context
+          const openaiModule = await import("openai");
+          const OpenAI = (openaiModule as any).default || openaiModule;
+          const client = new (OpenAI as any)({ apiKey: this.apiKey });
+
+          if (this.debug) {
+            console.error(
+              `[OpenAIEmbeddings] Initialized OpenAI client with model ${this.model}`
+            );
+          }
+
+          return client;
+        } catch (err) {
+          throw new Error(
+            "OpenAI package not available. Install with: npm install openai"
+          );
+        }
+      })();
+    }
+
+    return this.clientPromise;
+  }
+
   async embed(text: string): Promise<number[]> {
     try {
-      const response = await this.client.embeddings.create({
+      const client = await this.getClient();
+      const response = await client.embeddings.create({
         model: this.model,
         input: text,
       });
