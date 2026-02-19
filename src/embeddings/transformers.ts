@@ -67,6 +67,11 @@ export class TransformersEmbeddings implements EmbeddingProvider {
       );
     }
 
+    if (embedding.length !== this.dimension) {
+      throw new Error(
+        `Expected ${this.dimension}-dim embedding but got ${embedding.length}-dim`
+      );
+    }
     return embedding;
   }
 }
