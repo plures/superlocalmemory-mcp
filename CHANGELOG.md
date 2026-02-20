@@ -1,3 +1,10 @@
+## [0.2.0] — 2026-02-20
+
+- feat: replace OpenAI/Ollama with Transformers.js for zero-config operation (#2) (d1240f1)
+- ci: add standardized release pipeline (19f275c)
+- feat: MCP server for superlocalmemory v0.1.0 (2f2e647)
+- Initial commit (a927cb5)
+
 # Changelog
 
 ## 0.2.0 (Unreleased)

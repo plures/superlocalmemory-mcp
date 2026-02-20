@@ -1,18 +1,32 @@
 {
   "name": "@plures/superlocalmemory-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MCP server for superlocalmemory — persistent vector memory for AI coding assistants",
   "type": "module",
   "license": "AGPL-3.0",
   "author": "Plures <hello@plures.dev>",
-  "repository": { "type": "git", "url": "https://github.com/plures/superlocalmemory-mcp.git" },
-  "keywords": ["mcp", "memory", "vector-search", "copilot", "ai", "local-first"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/plures/superlocalmemory-mcp.git"
+  },
+  "keywords": [
+    "mcp",
+    "memory",
+    "vector-search",
+    "copilot",
+    "ai",
+    "local-first"
+  ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
     "superlocalmemory-mcp": "./dist/index.js"
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
@@ -34,5 +48,7 @@
     "@types/node": "^22.0.0",
     "@types/better-sqlite3": "^7.0.0"
   },
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=18"
+  }
 }
