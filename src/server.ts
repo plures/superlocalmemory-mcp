@@ -12,8 +12,8 @@ import {
   ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 
-import { MemoryDB } from "@plures/superlocalmemory/db";
-import { DualEmbeddings } from "@plures/superlocalmemory/embeddings";
+import { MemoryDB } from "./db/memory.js";
+import { createEmbeddings } from "./embeddings/index.js";
 
 import { loadConfig } from "./config.js";
 
@@ -88,20 +88,12 @@ export async function startServer(): Promise<void> {
   const config = loadConfig();
   await ensureParentDir(config.dbPath);
 
-  const embeddings = new DualEmbeddings(
-    {
-      openaiKey: config.openaiApiKey,
-      // Keep dimension consistent with the plugin defaults; this impacts DB embedding storage.
-      dimension: 1536,
-      debug: config.debug,
-    },
-    config.debug
-      ? {
-          info: (msg: string) => process.stderr.write(`[superlocalmemory-mcp] ${msg}\n`),
-          warn: (msg: string) => process.stderr.write(`[superlocalmemory-mcp] WARN: ${msg}\n`),
-        }
-      : undefined,
-  );
+  // Create embeddings provider (defaults to Transformers.js, optional OpenAI)
+  const embeddings = await createEmbeddings({
+    openaiApiKey: config.openaiApiKey,
+    openaiModel: config.openaiModel,
+    debug: config.debug,
+  });
 
   const db = new MemoryDB(config.dbPath, embeddings.dimension);
 
@@ -233,7 +225,7 @@ export async function startServer(): Promise<void> {
 
         return textResult({
           query,
-          results: results.map((r: { entry: { id: string; content: string; created_at: number; source: string; tags: string[]; category: string }; score: number }) => ({
+          results: results.map((r) => ({
             id: r.entry.id,
             content: r.entry.content,
             score: r.score,
@@ -397,7 +389,7 @@ export async function startServer(): Promise<void> {
       const md = [
         "# Recent memories",
         "",
-        ...items.map((c: string, i: number) => `## ${i + 1}\n\n${c}`),
+        ...items.map((c, i) => `## ${i + 1}\n\n${c}`),
       ].join("\n\n");
 
       return {

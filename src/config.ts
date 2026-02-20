@@ -3,7 +3,8 @@ import path from "node:path";
 
 export interface McpConfig {
   dbPath: string;
-  openaiApiKey: string;
+  openaiApiKey?: string;
+  openaiModel?: string;
   debug: boolean;
 }
 
@@ -16,14 +17,9 @@ function expandHome(p: string): string {
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): McpConfig {
   const dbPath = expandHome(env.SUPERLOCALMEMORY_DB_PATH ?? "~/.superlocalmemory/mcp.db");
-  const openaiApiKey = env.OPENAI_API_KEY ?? "";
+  const openaiApiKey = env.OPENAI_API_KEY;
+  const openaiModel = env.OPENAI_EMBEDDING_MODEL;
   const debug = (env.SUPERLOCALMEMORY_DEBUG ?? "").toLowerCase() === "true";
 
-  if (!openaiApiKey) {
-    throw new Error(
-      "OPENAI_API_KEY is required (used for embeddings). Set OPENAI_API_KEY in the MCP server environment.",
-    );
-  }
-
-  return { dbPath, openaiApiKey, debug };
+  return { dbPath, openaiApiKey, openaiModel, debug };
 }

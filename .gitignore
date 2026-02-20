@@ -3,3 +3,6 @@ node_modules
 *.log
 .DS_Store
 .env
+test-*.js
+test-db
+IMPLEMENTATION_SUMMARY.md

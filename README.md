@@ -6,64 +6,95 @@ It exposes a small set of MCP **tools** and **resources** so editors like VS Cod
 
 - Storage: local SQLite file (better-sqlite3)
 - Retrieval: semantic vector search
-- Embeddings: OpenAI embeddings via `OPENAI_API_KEY`
+- Embeddings: **Transformers.js (default, zero-config)** or OpenAI (optional)
+
+## ✨ Zero-Config Usage
+
+**No API keys required!** Just run:
+
+```bash
+npx @plures/superlocalmemory-mcp
+```
+
+The server uses **Transformers.js** to run embeddings locally in-process with the `bge-small-en-v1.5` model (384 dimensions).
+
+> **Note:** First run will download the model (~100MB) to `~/.cache/superlocalmemory/transformers`. Subsequent runs are instant and fully offline.
 
 ## Install
 
-> This package is intended to be run via MCP "server command" configs.
-
 ```bash
-npm install -g @plures/superlocalmemory-mcp
-# or run via npx (recommended):
+# Run directly (recommended):
 npx @plures/superlocalmemory-mcp
+
+# Or install globally:
+npm install -g @plures/superlocalmemory-mcp
 ```
 
 ## Configuration
 
-Environment variables:
+All configuration is **optional**:
 
-- `OPENAI_API_KEY` (**required**) — used to compute embeddings
+### Environment Variables
+
 - `SUPERLOCALMEMORY_DB_PATH` (optional) — SQLite DB path (default: `~/.superlocalmemory/mcp.db`)
 - `SUPERLOCALMEMORY_DEBUG` (optional) — set to `true` for debug logs to stderr
+- `SUPERLOCALMEMORY_CACHE_DIR` (optional) — Transformers.js model cache directory (default: `~/.cache/superlocalmemory/transformers`)
+- `OPENAI_API_KEY` (optional) — use OpenAI embeddings instead of local Transformers.js
+- `OPENAI_EMBEDDING_MODEL` (optional) — OpenAI model to use (default: `text-embedding-3-small`)
 
+### Using OpenAI (Optional)
+
+If you prefer OpenAI embeddings over local Transformers.js:
+
+1. Set `OPENAI_API_KEY` in your environment
+2. The server will use OpenAI with 1536-dim embeddings
+
+## Migration / Breaking Changes
+
+> **Important:** Embedding dimensions are **not** interchangeable. Transformers.js uses **384‑dim** embeddings, while OpenAI uses **1536‑dim** embeddings by default.
+
+If you already have an existing database:
+
+- **Databases created with OpenAI embeddings must continue using `OPENAI_API_KEY`.**
+  - Do **not** switch that database to Transformers.js; the stored vectors will be incompatible.
+  - The server will detect dimension mismatches and provide a clear error message.
+- There is **no automatic migration** between 384‑dim and 1536‑dim embeddings.
+- To change providers (OpenAI ⇄ Transformers.js), you must either:
+  - Point `SUPERLOCALMEMORY_DB_PATH` to a **new database**, or
+  - Delete/recreate the existing DB and **re-index all memories**.
 ## Editor setup
 
-### VS Code (Copilot) — `mcp.json`
+### Zero-Config Examples
+
+These examples require **no environment variables** and work out of the box:
+
+#### VS Code (Copilot) — `mcp.json`
 
 ```json
 {
   "mcpServers": {
     "superlocalmemory": {
       "command": "npx",
-      "args": ["@plures/superlocalmemory-mcp"],
-      "env": {
-        "OPENAI_API_KEY": "your-key",
-        "SUPERLOCALMEMORY_DB_PATH": "~/.superlocalmemory/mcp.db"
-      }
+      "args": ["@plures/superlocalmemory-mcp"]
     }
   }
 }
 ```
 
-### Cursor — `settings.json`
-
-Cursor uses an MCP servers configuration similar to:
+#### Cursor — `settings.json`
 
 ```json
 {
   "mcpServers": {
     "superlocalmemory": {
       "command": "npx",
-      "args": ["@plures/superlocalmemory-mcp"],
-      "env": {
-        "OPENAI_API_KEY": "your-key"
-      }
+      "args": ["@plures/superlocalmemory-mcp"]
     }
   }
 }
 ```
 
-### Continue.dev — `config.json`
+#### Continue.dev — `config.json`
 
 ```json
 {
@@ -71,16 +102,28 @@ Cursor uses an MCP servers configuration similar to:
     {
       "name": "superlocalmemory",
       "command": "npx",
-      "args": ["@plures/superlocalmemory-mcp"],
-      "env": {
-        "OPENAI_API_KEY": "your-key"
-      }
+      "args": ["@plures/superlocalmemory-mcp"]
     }
   ]
 }
 ```
 
-### Claude Desktop — `claude_desktop_config.json`
+#### Claude Desktop — `claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "superlocalmemory": {
+      "command": "npx",
+      "args": ["@plures/superlocalmemory-mcp"]
+    }
+  }
+}
+```
+
+### With OpenAI (Optional)
+
+If you prefer OpenAI embeddings:
 
 ```json
 {
@@ -147,17 +190,25 @@ Return database stats.
 
 ## How it works
 
-This server uses [`@plures/superlocalmemory`](../../plugins/superlocalmemory) under the hood:
+This server provides local-first persistent memory with:
 
-- A local SQLite database stores memory rows.
-- On `memory_store` / `memory_search`, the server computes an embedding (OpenAI) and performs in-process cosine similarity.
-- `memory_index` walks a directory, reads text-like files, and stores them with a source label so they can be retrieved later.
+- **Local SQLite database** stores memory rows with embeddings
+- **Embeddings**: 
+  - Default: Transformers.js (`bge-small-en-v1.5`, 384-dim) — runs in-process, zero-config
+  - Optional: OpenAI API (`text-embedding-3-small`, 1536-dim) — requires API key
+- **Vector search**: In-process cosine similarity against stored embeddings
+- **Indexing**: `memory_index` walks a directory, reads text files, and stores them for later retrieval
 
 ## Privacy
 
-All memory data is stored **locally** on your machine at `SUPERLOCALMEMORY_DB_PATH`.
+All memory data is stored **locally** on your machine at `SUPERLOCALMEMORY_DB_PATH` (default: `~/.superlocalmemory/mcp.db`).
 
-The only network call is for **embedding generation** when using OpenAI (via `OPENAI_API_KEY`).
+### Network Usage
+
+- **Transformers.js (default)**: One-time model download (~100MB) on first run, then 100% offline
+- **OpenAI (optional)**: API calls for each embedding when `OPENAI_API_KEY` is set
+
+No memory content is ever sent to external services except for embedding generation when using OpenAI.
 
 ## Development
 
